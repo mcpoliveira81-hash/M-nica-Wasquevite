@@ -1,0 +1,11 @@
+# Editor / sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# Dependências
+node_modules/
+
+# Arquivos temporários
+*.tmp
+~$*
