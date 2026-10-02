@@ -10,23 +10,30 @@ function Save-Jpg([System.Drawing.Bitmap]$bmp, [string]$path, [long]$quality) {
   $bmp.Dispose()
 }
 
-# 1) Consultório (622558494) -> manter proporção, otimizar
-$src1 = Join-Path $dir '622558494_18089609222286409_5610068746848476364_n.jpg'
-$img1 = New-Object System.Drawing.Bitmap($src1)
-Save-Jpg $img1 (Join-Path $dir 'monica-consultorio.jpg') 86
+# Corta a faixa inferior (21%) — remoção de sobreposições — e otimiza
+function Crop-Optimize([string]$srcName, [string]$outName) {
+  $src = Join-Path $dir $srcName
+  $img = New-Object System.Drawing.Bitmap($src)
+  $cutY = [int]($img.Height * 0.79)
+  $rect = New-Object System.Drawing.Rectangle(0, 0, $img.Width, $cutY)
+  $crop = $img.Clone($rect, $img.PixelFormat)
+  $img.Dispose()
+  Save-Jpg $crop (Join-Path $dir $outName) 85
+}
 
-# 2) Retrato (624211546) -> remover card sobreposto inferior (~21% da altura)
-$src2 = Join-Path $dir '624211546_18105552736627480_4293618313031623903_n.jpg'
-$img2 = New-Object System.Drawing.Bitmap($src2)
-$cutY = [int]($img2.Height * 0.79)
-$rect = New-Object System.Drawing.Rectangle(0, 0, $img2.Width, $cutY)
-$crop = $img2.Clone($rect, $img2.PixelFormat)
-$img2.Dispose()
-Save-Jpg $crop (Join-Path $dir 'monica-retrato.jpg') 86
+# Só otimiza, mantém o enquadramento
+function Optimize([string]$srcName, [string]$outName) {
+  $img = New-Object System.Drawing.Bitmap((Join-Path $dir $srcName))
+  Save-Jpg $img (Join-Path $dir $outName) 85
+}
 
-# 3) Ortodontia (632611294) -> otimizar
-$src3 = Join-Path $dir '632611294_18413799310192731_8609120086562931226_n.jpg'
-$img3 = New-Object System.Drawing.Bitmap($src3)
-Save-Jpg $img3 (Join-Path $dir 'monica-ortodontia.jpg') 86
+Crop-Optimize '622558494_18089609222286409_5610068746848476364_n.jpg' 'monica-consultorio.jpg'
+Crop-Optimize '624211546_18105552736627480_4293618313031623903_n.jpg' 'monica-retrato.jpg'
+Optimize    '632611294_18413799310192731_8609120086562931226_n.jpg' 'monica-ortodontia.jpg'
 
-Get-ChildItem -LiteralPath $dir -Filter 'monica-*.jpg' | Select-Object Name, Length
+Get-ChildItem -LiteralPath $dir -Filter 'monica-*.jpg' |
+  ForEach-Object {
+    $i = [System.Drawing.Image]::FromFile($_.FullName)
+    "{0}  {1}x{2}  {3}KB" -f $_.Name, $i.Width, $i.Height, [int]($_.Length/1024)
+    $i.Dispose()
+  }
